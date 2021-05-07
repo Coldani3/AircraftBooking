@@ -2,7 +2,7 @@
 
 namespace AircraftBooking.Server
 {
-    class Program
+    class ServerMain
     {
         static void Main(string[] args)
         {
