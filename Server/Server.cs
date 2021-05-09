@@ -2,12 +2,18 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using AircraftBooking.Shared.Packets;
+using AircraftBooking.Shared.Serialisation;
+using AircraftBooking.Shared;
 
 namespace AircraftBooking.Server
 {
 	public class Server 
 	{
 		private static Server Instance = new Server();
+		public User CurrentUser;
+		public UserDatabase Users = new UserDatabase("users.txt");
+		public bool UserLoggedIn {get => this.CurrentUser != null;}
 
 		private Server()
 		{
@@ -46,6 +52,39 @@ namespace AircraftBooking.Server
 						}
                     }
                     string serialisedXml = data.Substring(0,data.Length - 5);
+					Packet packet = Serializer.Deserialize<Packet>(serialisedXml);
+
+					switch (packet.PacketType)
+					{
+						case 1:
+							//UserInfo
+							UserInfoPacket userInfoPacket = (UserInfoPacket) packet;
+							User user = userInfoPacket.DeserializeUser();
+
+							if (this.Users.TryLogin(user))
+							{
+								this.CurrentUser = userInfoPacket.DeserializeUser();
+								this.SendPacket(new SuccessPacket("Successful login"), clientSocket);
+							}
+							else
+							{
+								this.SendPacket(new InvalidPacket("Invalid login!"), clientSocket);
+							}
+
+							break;
+						case 2:
+							//RequestPlaneSeat
+							if (this.UserLoggedIn)
+							{
+
+							}
+							else
+							{
+								this.SendPacket(new InvalidPacket("Cannot request a plane seat as you are not logged in!"), clientSocket);
+							}
+							break;
+
+					}
                     // DataItem dataItem = DataItemSerialisation.GetDataItem(serialisedXml);
                     // WriteLine("Text received -> {0} ", dataItem.Id);
                     // DataItem response = new DataItem("Green");
@@ -62,6 +101,11 @@ namespace AircraftBooking.Server
                 Console.WriteLine(e.ToString());
             }
         }
+
+		public void SendPacket(Packet packet, Socket socket)
+		{
+			socket.Send(Encoding.ASCII.GetBytes(Serializer.Serialize<Packet>(packet)));
+		}
 
 		//Singleton as there should only ever be one Server.
 		public static Server GetServer()

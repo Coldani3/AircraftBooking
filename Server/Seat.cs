@@ -13,7 +13,17 @@ namespace AircraftBooking.Server
 
 		public Seat(User occupant)
 		{
+			this.SetOccupant(occupant);
+		}
+
+		public void SetOccupant(User occupant)
+		{
 			this.Occupant = occupant;
+		}
+
+		public void Empty()
+		{
+			this.Occupant = null;
 		}
 	}
 }

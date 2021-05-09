@@ -17,13 +17,8 @@ namespace AircraftBooking.Shared.Packets
 			this.Data = data;
 		}
 
-		public static T GetPacketFromData<T>(int type, T data) where T : Packet
-		{
-			return new T(type, Serializer.Serialize(data));
-		}
-
 		//overload with a version that returns this but casted to the correct data type 
-		public T Deserialize<T>()
+		public virtual T Deserialize<T>()
 		{
 			//take Data and convert into an object
 			return (T) Serializer.Deserialize<T>(this.Data);

@@ -73,5 +73,18 @@ namespace AircraftBooking.Server
 				}
 			}
 		}
+
+		public bool TryLogin(User user)
+		{
+			foreach (User currUser in this.Users)
+			{
+				if (user.Username == currUser.Username && currUser.CheckPassword(user.GetPassword()))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
 	}
 }

@@ -9,7 +9,7 @@ namespace AircraftBooking.Shared.Packets
 
 		public User DeserializeUser()
 		{
-			return this.Deserialize<User>();
+			return base.Deserialize<User>();
 		}
 	}
 }

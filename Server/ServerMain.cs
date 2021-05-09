@@ -6,7 +6,7 @@ namespace AircraftBooking.Server
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            Server.GetServer().Start();
         }
     }
 }
