@@ -25,6 +25,8 @@ namespace AircraftBooking.Client
 			MenuManager manager = MenuManager;
 			bool ranOnce = false;
 
+			renderer.Render(manager);
+
 			while (Running)
 			{
 				ConsoleKeyInfo input = Console.ReadKey(true);

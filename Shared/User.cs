@@ -3,7 +3,12 @@ namespace AircraftBooking.Shared
 	public class User
 	{
 		public string Username;
-		private string Password;
+		public string Password;
+
+		public User()
+		{
+
+		}
 
 		public User(string username, string password)
 		{

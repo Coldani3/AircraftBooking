@@ -1,6 +1,10 @@
+using System.Xml.Serialization;
+using System;
+
 namespace AircraftBooking.Shared.Packets
 {
 	//Client -> Server
+	[Serializable, XmlRoot("BookPlaneSeatPacket")]
 	public class BookPlaneSeatPacket : HasUserPacket
 	{
 		public int PlaneID;

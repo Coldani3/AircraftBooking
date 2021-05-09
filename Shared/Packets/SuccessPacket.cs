@@ -1,5 +1,9 @@
+using System.Xml.Serialization;
+using System;
+
 namespace AircraftBooking.Shared.Packets
 {
+	[Serializable, XmlRoot("SuccessPacket")]
 	public class SuccessPacket : Packet
 	{
 		public string Message;
@@ -7,7 +11,7 @@ namespace AircraftBooking.Shared.Packets
 
 		public SuccessPacket() : base(-2, "")
 		{
-			
+
 		}
 
 		public override Packet Construct(params object[] args)

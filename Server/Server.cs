@@ -17,7 +17,7 @@ namespace AircraftBooking.Server
 		public Hangar Planes = new Hangar();
 		// public bool UserLoggedIn {get => this.CurrentUser != null;}
 		public List<User> LoggedInUsers = new List<User>();
-		private Socket ClientSocket;
+		private Dictionary<User, Socket> UserToSockets = new Dictionary<User, Socket>();
 
 		private Server()
 		{
@@ -45,8 +45,8 @@ namespace AircraftBooking.Server
 
                 while (true)
                 {
-                    ClientSocket = listenerSocket.Accept();
-					Socket clientSocket = ClientSocket;
+                    //ClientSocket = listenerSocket.Accept();
+					Socket clientSocket = listenerSocket.Accept();
 					System.Console.WriteLine("Connection established!");
 
                     // Data buffer 
@@ -63,19 +63,23 @@ namespace AircraftBooking.Server
 						}
                     }
                     string serialisedXml = data.Substring(0,data.Length - 5);
+					Console.WriteLine($"Received serialised packet: {serialisedXml}");
 					Packet packet = Serializer.Deserialize<Packet>(serialisedXml);
-					Console.WriteLine("Received packet!");
+					Console.WriteLine($"Received packet {packet.PacketType}!");
+					User currUser;
 
 					switch (packet.PacketType)
 					{
 						case 1:
 							//UserInfo
-							UserInfoPacket userInfoPacket = (UserInfoPacket) packet;
-							User user = userInfoPacket.DeserializeUser();
+							UserInfoPacket userInfoPacket = Serializer.Deserialize<UserInfoPacket>(serialisedXml);//(UserInfoPacket) packet;
+							User user = userInfoPacket.User;
 
-							if (this.Users.TryLogin(user))
+							if (this.Users.TryLogin(user) && !this.LoggedInUsers.Contains(user))
 							{
 								this.LoggedInUsers.Add(user);
+								this.UserToSockets.Add(user, clientSocket);
+								//this is fine as we know clientsocket is the right socket
 								this.SendPacket(new SuccessPacket().Construct("Successful login", 1), clientSocket);
 								Console.WriteLine($"User {user.Username} logged in!");
 							}
@@ -100,7 +104,8 @@ namespace AircraftBooking.Server
 
 						case 4:
 						//BookPlaneSeat
-							BookPlaneSeatPacket bpsPacket = (BookPlaneSeatPacket) packet;
+							BookPlaneSeatPacket bpsPacket = Serializer.Deserialize<BookPlaneSeatPacket>(serialisedXml);//(BookPlaneSeatPacket) packet;
+							currUser = bpsPacket.User;
 
 							if (this.UserLoggedIn(bpsPacket.User))
 							{
@@ -110,17 +115,17 @@ namespace AircraftBooking.Server
 
 									if (desiredPlane.SeatAvailable(bpsPacket.SeatID))
 									{
-										desiredPlane.AddUserToSeat(this.CurrentUser, bpsPacket.SeatID);
-										this.SendPacket(new SuccessPacket().Construct("Successfully booked seat", 2), clientSocket);
+										desiredPlane.AddUserToSeat(currUser, bpsPacket.SeatID);
+										this.SendPacket(new SuccessPacket().Construct("Successfully booked seat", 2), this.UserToSockets[currUser]);
 									}
 									else
 									{
-										this.SendPacket(new InvalidPacket().Construct("Seat already booked"), clientSocket);
+										this.SendPacket(new InvalidPacket().Construct("Seat already booked"), this.UserToSockets[currUser]);
 									}
 								}
 								else
 								{
-									this.SendPacket(new InvalidPacket().Construct("Invalid seat ID"), clientSocket);
+									this.SendPacket(new InvalidPacket().Construct("Invalid seat ID"), this.UserToSockets[currUser]);
 								}
 							}
 							else
@@ -132,13 +137,14 @@ namespace AircraftBooking.Server
 
 						case 5:
 							//RequestAvailablePlanes
-							RequestAvailablePlanesPacket rapPacket = (RequestAvailablePlanesPacket) packet;
+							RequestAvailablePlanesPacket rapPacket = Serializer.Deserialize<RequestAvailablePlanesPacket>(serialisedXml);//(RequestAvailablePlanesPacket) packet;
+							currUser = rapPacket.User;
 
 							if (this.UserLoggedIn(rapPacket.User))
 							{
 								PlaneInfo[] infos = this.Planes.GetPlaneInfos();
 
-								this.SendPacket(new SendAvailablePlanesPacket().Construct(infos), clientSocket);
+								this.SendPacket(new SendAvailablePlanesPacket().Construct(infos), this.UserToSockets[currUser]);
 							}
 							else
 							{
@@ -163,8 +169,14 @@ namespace AircraftBooking.Server
             }
 			finally
 			{
-				ClientSocket.Shutdown(SocketShutdown.Both);
-                ClientSocket.Close();
+				foreach (Socket socket in UserToSockets.Values)
+				{
+					socket.Shutdown(SocketShutdown.Both);
+					socket.Close();
+				}
+
+				// ClientSocket.Shutdown(SocketShutdown.Both);
+                // ClientSocket.Close();
 			}
         }
 
@@ -190,6 +202,11 @@ namespace AircraftBooking.Server
 		public static Server GetServer()
 		{
 			return Instance;
+		}
+
+		public Dictionary<User, Socket> GetUserToSockets()
+		{
+			return UserToSockets;
 		}
 	}
 }

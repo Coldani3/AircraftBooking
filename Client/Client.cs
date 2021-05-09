@@ -61,7 +61,7 @@ namespace AircraftBooking.Client
             }
 		}
 
-		public Packet ReceivePacket(Socket socket)
+		public T ReceivePacket<T>(Socket socket) where T : Packet
 		{
 			try
 			{
@@ -71,12 +71,12 @@ namespace AircraftBooking.Client
 				int byteRecv = socket.Receive(messageReceived);
 				string response = Encoding.ASCII.GetString(messageReceived, 0, byteRecv);
 
-				return Serializer.Deserialize<Packet>(response);
+				return Serializer.Deserialize<T>(response);
 			}
 			catch (Exception e)
 			{
 				Console.WriteLine(e.Message);
-				return new InvalidPacket().Construct("A network exception occurred.");
+				return (T) (new InvalidPacket().Construct("A network exception occurred."));
 			}
 		}
 

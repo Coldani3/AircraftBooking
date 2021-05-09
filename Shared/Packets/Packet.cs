@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using AircraftBooking.Shared.Serialisation;
+using System.Xml.Serialization;
+using System;
 
 namespace AircraftBooking.Shared.Packets
 {
 	//A Mediator to facilitate transfer of information between client and server.
 	//Subclasses define specific behaviour, and should have properties based on that behaviour.
+	[Serializable, XmlRoot("Packet")]
     public class Packet
     {
-		public int PacketType {get; private set;}
+		public int PacketType {get; set;}
 		public string Data;
 
 		public Packet()

@@ -1,7 +1,10 @@
 using AircraftBooking.Shared.Packets;
+using System.Xml.Serialization;
+using System;
 
 namespace AircraftBooking.Shared
 {
+	[Serializable, XmlRoot("SendPlaneInfoPacket")]
 	public class SendPlaneInfoPacket : Packet
 	{
 		public int PlaneID;
