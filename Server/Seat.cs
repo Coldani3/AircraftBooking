@@ -25,5 +25,10 @@ namespace AircraftBooking.Server
 		{
 			this.Occupant = null;
 		}
+
+		public bool Occupied()
+		{
+			return this.Occupant != null;
+		}
 	}
 }

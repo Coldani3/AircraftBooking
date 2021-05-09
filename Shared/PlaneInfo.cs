@@ -6,6 +6,11 @@ namespace AircraftBooking.Shared
 		public string PlaneName;
 		public int[] TakenSeats;
 
+		public PlaneInfo()
+		{
+			
+		}
+
 		public PlaneInfo(int id, string name, int[] takenSeats)
 		{
 			this.PlaneID = id;

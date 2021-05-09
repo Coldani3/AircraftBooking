@@ -22,8 +22,9 @@ namespace AircraftBooking.Client
 
 			if (response.PacketType != -1)
 			{
-				
+				Client.GetClient().SendPacket(new RequestAvailablePlanesPacket(), Client.GetSocket());
 			}
+
 			return base.Submit();
 		}
 	}

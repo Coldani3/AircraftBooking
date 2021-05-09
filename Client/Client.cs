@@ -32,8 +32,8 @@ namespace AircraftBooking.Client
                     // DataItem request = new DataItem("Theresa");
                     // string serialisedItem = DataItemSerialisation.GetSerialisedDataItem(request);
                     SenderSocket.Connect(localEndPoint);
-                    Console.WriteLine("Socket connected to -> {0} ",
-                                SenderSocket.RemoteEndPoint);
+                    // Console.WriteLine("Socket connected to -> {0} ",
+                    //             SenderSocket.RemoteEndPoint);
 					
 					//while (Program.Running)
 					//{
@@ -76,7 +76,7 @@ namespace AircraftBooking.Client
 			catch (Exception e)
 			{
 				Console.WriteLine(e.Message);
-				return new InvalidPacket("A network exception occurred.");
+				return new InvalidPacket().Construct("A network exception occurred.");
 			}
 		}
 

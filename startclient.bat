@@ -1,1 +1,1 @@
-dotnet run Client
+dotnet run --project Client

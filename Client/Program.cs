@@ -7,6 +7,7 @@ namespace AircraftBooking.Client
     {
 		//State that keeps track of the client's running status
 		public static bool Running = true;
+		public static MenuManager MenuManager;
 
         static void Main(string[] args)
         {
@@ -20,7 +21,8 @@ namespace AircraftBooking.Client
 			Console.SetWindowSize(70, 40);
 			MainMenu menu = new MainMenu();
 			Renderer renderer = new Renderer();
-			MenuManager manager = new MenuManager(renderer, menu);
+			MenuManager = new MenuManager(renderer, menu);
+			MenuManager manager = MenuManager;
 			bool ranOnce = false;
 
 			while (Running)

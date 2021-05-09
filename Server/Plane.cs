@@ -7,6 +7,7 @@ namespace AircraftBooking.Server
 	{
 		public string Name {get; private set;}
 		public Seat[] Seats;
+		public List<int> TakenSeats = new List<int>();
 
 		public Plane(string name, int seats)
 		{
@@ -19,6 +20,7 @@ namespace AircraftBooking.Server
 			if (this.Seats[seatID] == null)
 			{
 				this.Seats[seatID] = new Seat(user);
+				this.TakenSeats.Add(seatID);
 			}
 			else
 			{
@@ -33,9 +35,19 @@ namespace AircraftBooking.Server
 
 		public int[] GetTakenSeatIndexes()
 		{
-			List<int> Indexes = new List<int>();
+			// List<int> Indexes = new List<int>();
 
-			return Indexes.ToArray();
+			// for (int i = 0; i < this.Seats.Length; i++)
+			// {
+			// 	if (this.Seats[i].Occupied())
+			// 	{
+			// 		Indexes.Add(i);
+			// 	}
+			// }
+
+			// return Indexes.ToArray();
+
+			return this.TakenSeats.ToArray();
 		}
 	}
 }

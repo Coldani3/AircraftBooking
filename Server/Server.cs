@@ -5,6 +5,7 @@ using System.Text;
 using AircraftBooking.Shared.Packets;
 using AircraftBooking.Shared.Serialisation;
 using AircraftBooking.Shared;
+using System.Collections.Generic;
 
 namespace AircraftBooking.Server
 {
@@ -14,7 +15,8 @@ namespace AircraftBooking.Server
 		public User CurrentUser;
 		public UserDatabase Users = new UserDatabase("users.txt");
 		public Hangar Planes = new Hangar();
-		public bool UserLoggedIn {get => this.CurrentUser != null;}
+		// public bool UserLoggedIn {get => this.CurrentUser != null;}
+		public List<User> LoggedInUsers = new List<User>();
 		private Socket ClientSocket;
 
 		private Server()
@@ -73,7 +75,7 @@ namespace AircraftBooking.Server
 
 							if (this.Users.TryLogin(user))
 							{
-								this.CurrentUser = userInfoPacket.DeserializeUser();
+								this.LoggedInUsers.Add(user);
 								this.SendPacket(new SuccessPacket().Construct("Successful login", 1), clientSocket);
 								Console.WriteLine($"User {user.Username} logged in!");
 							}
@@ -97,18 +99,18 @@ namespace AircraftBooking.Server
 						// 	break;
 
 						case 4:
-						//RequestPlaneSeat
-							if (this.UserLoggedIn)
+						//BookPlaneSeat
+							BookPlaneSeatPacket bpsPacket = (BookPlaneSeatPacket) packet;
+
+							if (this.UserLoggedIn(bpsPacket.User))
 							{
-								RequestPlaneSeatPacket rpsPacket = (RequestPlaneSeatPacket) packet;
-
-								if (this.Planes.GetPlanesLength() <= rpsPacket.PlaneID)
+								if (this.Planes.GetPlanesLength() <= bpsPacket.PlaneID)
 								{
-									Plane desiredPlane = this.Planes.GetByID(rpsPacket.PlaneID);
+									Plane desiredPlane = this.Planes.GetByID(bpsPacket.PlaneID);
 
-									if (desiredPlane.SeatAvailable(rpsPacket.SeatID))
+									if (desiredPlane.SeatAvailable(bpsPacket.SeatID))
 									{
-										desiredPlane.AddUserToSeat(this.CurrentUser, rpsPacket.SeatID);
+										desiredPlane.AddUserToSeat(this.CurrentUser, bpsPacket.SeatID);
 										this.SendPacket(new SuccessPacket().Construct("Successfully booked seat", 2), clientSocket);
 									}
 									else
@@ -130,9 +132,17 @@ namespace AircraftBooking.Server
 
 						case 5:
 							//RequestAvailablePlanes
-							if (this.UserLoggedIn)
+							RequestAvailablePlanesPacket rapPacket = (RequestAvailablePlanesPacket) packet;
+
+							if (this.UserLoggedIn(rapPacket.User))
 							{
-								
+								PlaneInfo[] infos = this.Planes.GetPlaneInfos();
+
+								this.SendPacket(new SendAvailablePlanesPacket().Construct(infos), clientSocket);
+							}
+							else
+							{
+								this.SendPacket(new InvalidPacket().Construct("Cannot request planes as you are not logged in!"), clientSocket);
 							}
 							break;
 
@@ -157,6 +167,19 @@ namespace AircraftBooking.Server
                 ClientSocket.Close();
 			}
         }
+
+		public bool UserLoggedIn(User user)
+		{
+			foreach (User preExistingUser in this.LoggedInUsers)
+			{
+				if (user == preExistingUser)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
 
 		public void SendPacket(Packet packet, Socket socket)
 		{

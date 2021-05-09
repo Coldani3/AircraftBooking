@@ -26,5 +26,17 @@ namespace AircraftBooking.Shared
 		{
 			return this.Username;
 		}
+
+		public override bool Equals(object obj)
+		{
+			if (obj is User)
+			{
+				User user = (User) obj;
+
+				return user.Username == this.Username && user.Password == this.Password;
+			}
+
+			return base.Equals(obj);
+		}
 	}
 }
