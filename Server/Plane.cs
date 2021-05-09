@@ -1,4 +1,5 @@
 using AircraftBooking.Shared;
+using System.Collections.Generic;
 
 namespace AircraftBooking.Server
 {
@@ -23,6 +24,18 @@ namespace AircraftBooking.Server
 			{
 				this.Seats[seatID].SetOccupant(user);
 			}
+		}
+
+		public bool SeatAvailable(int seatID)
+		{
+			return this.Seats[seatID] == null;
+		}
+
+		public int[] GetTakenSeatIndexes()
+		{
+			List<int> Indexes = new List<int>();
+
+			return Indexes.ToArray();
 		}
 	}
 }

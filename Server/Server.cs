@@ -13,15 +13,22 @@ namespace AircraftBooking.Server
 		private static Server Instance = new Server();
 		public User CurrentUser;
 		public UserDatabase Users = new UserDatabase("users.txt");
+		public Hangar Planes = new Hangar();
 		public bool UserLoggedIn {get => this.CurrentUser != null;}
+		private Socket ClientSocket;
 
 		private Server()
 		{
-
+			this.Planes.AddPlane(PlaneFactory.CreatePlane(PlaneTypes.AirbusA340));
+			this.Planes.AddPlane(PlaneFactory.CreatePlane(PlaneTypes.AirbusA340));
+			this.Planes.AddPlane(PlaneFactory.CreatePlane(PlaneTypes.Boeing747));
+			this.Planes.AddPlane(PlaneFactory.CreatePlane(PlaneTypes.Boeing757));
+			this.Planes.AddPlane(PlaneFactory.CreatePlane(PlaneTypes.Boeing747));
 		}
 
 		public void Start()
 		{
+			Console.WriteLine("Starting up server ...");
 			IPHostEntry ipHostDetails = Dns.GetHostEntry(Dns.GetHostName());
             IPAddress ipAddressDetails = ipHostDetails.AddressList[0];
             IPEndPoint localEndPoint = new IPEndPoint(ipAddressDetails, 4242);
@@ -36,7 +43,9 @@ namespace AircraftBooking.Server
 
                 while (true)
                 {
-                    Socket clientSocket = listenerSocket.Accept();
+                    ClientSocket = listenerSocket.Accept();
+					Socket clientSocket = ClientSocket;
+					System.Console.WriteLine("Connection established!");
 
                     // Data buffer 
                     byte[] bytes = new Byte[4096];
@@ -53,6 +62,7 @@ namespace AircraftBooking.Server
                     }
                     string serialisedXml = data.Substring(0,data.Length - 5);
 					Packet packet = Serializer.Deserialize<Packet>(serialisedXml);
+					Console.WriteLine("Received packet!");
 
 					switch (packet.PacketType)
 					{
@@ -64,23 +74,65 @@ namespace AircraftBooking.Server
 							if (this.Users.TryLogin(user))
 							{
 								this.CurrentUser = userInfoPacket.DeserializeUser();
-								this.SendPacket(new SuccessPacket("Successful login"), clientSocket);
+								this.SendPacket(new SuccessPacket().Construct("Successful login", 1), clientSocket);
+								Console.WriteLine($"User {user.Username} logged in!");
 							}
 							else
 							{
-								this.SendPacket(new InvalidPacket("Invalid login!"), clientSocket);
+								Console.WriteLine("Invalid login attempted.");
+								this.SendPacket(new InvalidPacket().Construct("Invalid login!"), clientSocket);
 							}
 
 							break;
 						case 2:
-							//RequestPlaneSeat
+							
+							break;
+
+						// case 3:
+						// 	//SendAvailablePlanes
+						// 	if (this.UserLoggedIn)
+						// 	{
+						// 		this.SendPacket(new SendPlaneInfoPacket().Construct())
+						// 	}
+						// 	break;
+
+						case 4:
+						//RequestPlaneSeat
 							if (this.UserLoggedIn)
 							{
+								RequestPlaneSeatPacket rpsPacket = (RequestPlaneSeatPacket) packet;
 
+								if (this.Planes.GetPlanesLength() <= rpsPacket.PlaneID)
+								{
+									Plane desiredPlane = this.Planes.GetByID(rpsPacket.PlaneID);
+
+									if (desiredPlane.SeatAvailable(rpsPacket.SeatID))
+									{
+										desiredPlane.AddUserToSeat(this.CurrentUser, rpsPacket.SeatID);
+										this.SendPacket(new SuccessPacket().Construct("Successfully booked seat", 2), clientSocket);
+									}
+									else
+									{
+										this.SendPacket(new InvalidPacket().Construct("Seat already booked"), clientSocket);
+									}
+								}
+								else
+								{
+									this.SendPacket(new InvalidPacket().Construct("Invalid seat ID"), clientSocket);
+								}
 							}
 							else
 							{
-								this.SendPacket(new InvalidPacket("Cannot request a plane seat as you are not logged in!"), clientSocket);
+								this.SendPacket(new InvalidPacket().Construct("Cannot request a plane seat as you are not logged in!"), clientSocket);
+							}
+
+							break;
+
+						case 5:
+							//RequestAvailablePlanes
+							if (this.UserLoggedIn)
+							{
+								
 							}
 							break;
 
@@ -89,17 +141,21 @@ namespace AircraftBooking.Server
                     // WriteLine("Text received -> {0} ", dataItem.Id);
                     // DataItem response = new DataItem("Green");
                     // string serialisedItem = DataItemSerialisation.GetSerialisedDataItem(response);
-                    byte[] message = null;//Encoding.ASCII.GetBytes(serialisedItem);
+                    // byte[] message = null;//Encoding.ASCII.GetBytes(serialisedItem);
 
-                    clientSocket.Send(message);
-                    clientSocket.Shutdown(SocketShutdown.Both);
-                    clientSocket.Close();
+                    // clientSocket.Send(message);
+                    
                 }
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
             }
+			finally
+			{
+				ClientSocket.Shutdown(SocketShutdown.Both);
+                ClientSocket.Close();
+			}
         }
 
 		public void SendPacket(Packet packet, Socket socket)

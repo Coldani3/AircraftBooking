@@ -6,13 +6,19 @@ namespace AircraftBooking.Shared
 	{
 		public int PlaneID;
 		public string PlaneName;
-		public bool[] TakenSeats;
+		public int[] TakenSeats;
 
-		public SendPlaneInfoPacket(int id, string name, bool[] takenSeats) : base(3, "")
+		public SendPlaneInfoPacket() : base(2, "")
 		{
-			this.PlaneID = id;
-			this.PlaneName = name;
-			this.TakenSeats = takenSeats;
+			
+		}
+
+		public override Packet Construct(params object[] args)
+		{
+			this.PlaneID = (int) args[0];
+			this.PlaneName = (string) args[1];
+			this.TakenSeats = (int[]) args[3];
+			return this;
 		}
 	}
 }

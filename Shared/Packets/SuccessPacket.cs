@@ -3,10 +3,18 @@ namespace AircraftBooking.Shared.Packets
 	public class SuccessPacket : Packet
 	{
 		public string Message;
+		public int SuccessID;
 
-		public SuccessPacket(string message) : base(-2, "")
+		public SuccessPacket() : base(-2, "")
 		{
-			this.Message = message;
+			
+		}
+
+		public override Packet Construct(params object[] args)
+		{
+			this.Message = (string) args[0];
+			this.SuccessID = (int) args[1];
+			return this;
 		}
 	}
 }

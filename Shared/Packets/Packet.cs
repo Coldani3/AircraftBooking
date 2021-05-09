@@ -11,10 +11,28 @@ namespace AircraftBooking.Shared.Packets
 		public int PacketType {get; private set;}
 		public string Data;
 
+		public Packet()
+		{
+			
+		}
+
 		public Packet(int type, string data) 
+		{
+			this.Construct(type, data);
+		}
+
+		//Builder method because you can't serialise something without a parameterless constructor
+
+		public virtual Packet Construct(int type, string data, params object[] args)
 		{
 			this.PacketType = type;
 			this.Data = data;
+			return this;
+		}
+
+		public virtual Packet Construct(params object[] args)
+		{
+			return this;
 		}
 
 		//overload with a version that returns this but casted to the correct data type 
