@@ -105,7 +105,7 @@ namespace AircraftBooking.Server
 
 								if (this.LogInManager.UserLoggedIn(bpsPacket.User))
 								{
-									if (this.Planes.GetPlanesLength() <= bpsPacket.PlaneID)
+									if (this.Planes.GetPlanesLength() >= bpsPacket.PlaneID)
 									{
 										Plane desiredPlane = this.Planes.GetByID(bpsPacket.PlaneID);
 
@@ -188,6 +188,11 @@ namespace AircraftBooking.Server
 		{
 			//serialize packet and send
 			socket.Send(Encoding.ASCII.GetBytes(Serializer.Serialize<Packet>(packet)));
+		}
+
+		public void ListenForUserAndBegin()
+		{
+
 		}
 
 		//Singleton as there should only ever be one Server.

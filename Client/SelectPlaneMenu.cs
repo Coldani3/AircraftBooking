@@ -8,16 +8,21 @@ namespace AircraftBooking.Client
 {
 	public class SelectPlaneMenu : SelectItemMenu
 	{
-		public SelectPlaneMenu(PlaneInfo[] planes) : base(NamesFromPlanes(planes), GenActionsForLength(planes.Length, planes))
+		public SelectPlaneMenu(PlaneInfo[] planes) : base(NamesFromPlanes(), GenActionsForLength(planes.Length, planes))
 		{
 			
 		}
 
-		public static string[] NamesFromPlanes(PlaneInfo[] planes)
+		public SelectPlaneMenu() : base(NamesFromPlanes(), GenActionsForLength(SessionData.Planes.Length, SessionData.Planes))
+		{
+			
+		}
+
+		public static string[] NamesFromPlanes()
 		{
 			List<string> names = new List<string>();
 
-			foreach (PlaneInfo plane in planes)
+			foreach (PlaneInfo plane in SessionData.Planes)
 			{
 				names.Add(plane.PlaneName);
 			}

@@ -61,6 +61,8 @@ namespace AircraftBooking.Client
 				int byteRecv = socket.Receive(messageReceived);
 				string response = Encoding.ASCII.GetString(messageReceived, 0, byteRecv);
 
+				Console.WriteLine(response);
+
 				return Serializer.Deserialize<T>(response);
 			}
 			catch (Exception e)

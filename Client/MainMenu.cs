@@ -31,10 +31,9 @@ namespace AircraftBooking.Client
 				// //this one is async for some reason so we wait until response2 is not null.
 				// while (response2 == null);
 				// SessionData.Planes = response2.PlaneInfos;
-				PlaneInfo[] infos = Utillity.UpdatePlanes(user);
 				SessionData.CurrentUser = user;
 				//go to next menu
-				Program.MenuManager.ChangeMenu(new SelectPlaneMenu(infos));
+				Program.MenuManager.ChangeMenu(new SelectPlaneMenu(Utillity.UpdatePlanes(user)));
 
 				return true;
 			}

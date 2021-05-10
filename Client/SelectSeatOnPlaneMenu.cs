@@ -20,15 +20,15 @@ namespace AircraftBooking.Client
 		{
 			string selectedPlaneStr = this.GetInputByIndex(0);
 
-			int selectedPlane;
+			int selectedSeat;
 
-			if (!Int32.TryParse(selectedPlaneStr, out selectedPlane))
+			if (!Int32.TryParse(selectedPlaneStr, out selectedSeat))
 			{
 				this.ErrorMessage = "The input was NOT a number!";
 				return false;
 			}
 
-			if (selectedPlane > this.Plane.MaxNumberOfSeats - 1)
+			if (selectedSeat > this.Plane.MaxNumberOfSeats - 1)
 			{
 				this.ErrorMessage = "The plane does not have that many seats!";
 				return false;
@@ -36,29 +36,35 @@ namespace AircraftBooking.Client
 
 			foreach (int takenPlane in this.Plane.TakenSeats)
 			{
-				if (selectedPlane == takenPlane)
+				if (selectedSeat == takenPlane)
 				{
 					this.ErrorMessage = "That plane is already known to be taken!";
 					return false;
 				}
 			}
 
-			Client.GetClient().SendPacket(new BookPlaneSeatPacket().Construct(this.Plane.PlaneID, selectedPlane, SessionData.CurrentUser), Client.GetSocket());
-			Program.MenuManager.ChangeMenu(Program.MenuManager.GetPreviousMenu());
+			Client.GetClient().SendPacket(new BookPlaneSeatPacket().Construct(this.Plane.PlaneID, selectedSeat, SessionData.CurrentUser), Client.GetSocket());
+			//receive response packet
+			Packet response = Client.GetClient().ReceivePacket<Packet>(Client.GetSocket());
 
-			Utillity.UpdatePlanes(SessionData.CurrentUser);
+			if (response.PacketType != -2)
+			{
+				this.ErrorMessage = "An error occurred.";
+				return false;
+			}
 
+			Program.MenuManager.ChangeMenu(new SelectPlaneMenu(Utillity.UpdatePlanes(SessionData.CurrentUser)));
 
-
-
-
-			return base.Submit();
+			return true;
 		}
 
 		public override void Display()
 		{
+			Console.SetCursorPosition(2, 3);
+			Console.Write($"Plane name: {this.Plane.PlaneName}");
 			Console.SetCursorPosition(2, 4);
-			Console.WriteLine($"Max number of seats: {this.Plane.MaxNumberOfSeats}");
+			Console.Write($"Max number of seats: {this.Plane.MaxNumberOfSeats}");
+			Console.SetCursorPosition(2, 5);
 			Console.Write("Taken seats: ");
 
 			for (int i = 0; i < this.Plane.TakenSeats.Length; i++)
@@ -66,11 +72,6 @@ namespace AircraftBooking.Client
 				string comma = i <= this.Plane.TakenSeats.Length - 1 ? "," : "";
 				Console.Write($"{this.Plane.TakenSeats[i]}{comma} ");
 			}
-
-			// foreach (int takenSeat in this.Plane.TakenSeats)
-			// {
-			// 	Console.Write($"{takenSeat}");
-			// }
 
 			base.Display();
 		}
