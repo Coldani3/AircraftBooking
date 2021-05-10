@@ -207,9 +207,8 @@ namespace AircraftBooking.Server
 							if (this.LogInManager.LoggedInUsers.Contains(logOutPacket.User.Username))
 							{
 								Console.WriteLine($"Logging out user {logOutPacket.User}!");
+								//remove from logged in users.
 								this.LogInManager.LoggedInUsers.Remove(logOutPacket.User.Username);
-								// this.UserToSockets[logOutPacket.User.Username].Shutdown(SocketShutdown.Both);
-								// this.UserToSockets[logOutPacket.User.Username].Close();
 							}
 
 							break;
