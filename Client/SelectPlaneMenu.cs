@@ -52,7 +52,6 @@ namespace AircraftBooking.Client
 		public static void SelectPlane(PlaneInfo plane)
 		{
 			Program.MenuManager.ChangeMenu(new SelectSeatOnPlaneMenu(plane.PlaneID));
-			//Client.GetClient().SendPacket(new BookPlaneSeatPacket().Construct(), Client.GetSocket());
 		}
 
 		public static void Logout()

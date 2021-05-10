@@ -1,2 +1,5 @@
 TestUser;test1
 user;password
+admin;admin
+john;cena;
+ojog;urotas

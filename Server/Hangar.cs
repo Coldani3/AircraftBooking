@@ -3,6 +3,7 @@ using AircraftBooking.Shared;
 
 namespace AircraftBooking.Server
 {
+	//Decorator for a List object
 	public class Hangar
 	{
 		public List<Plane> Planes = new List<Plane>();

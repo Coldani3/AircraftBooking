@@ -36,24 +36,24 @@ namespace AircraftBooking.Server
 		public void Start()
 		{
 			Console.WriteLine("Starting up server ...");
+			//initialise listener stuff
 			IPHostEntry ipHostDetails = Dns.GetHostEntry(Dns.GetHostName());
             IPAddress ipAddressDetails = ipHostDetails.AddressList[0];
             IPEndPoint localEndPoint = new IPEndPoint(ipAddressDetails, 4242);
 
 			TcpListener listener = new TcpListener(localEndPoint);
+			//start listening
 			listener.Start();
-
-            //Socket listenerSocket = new Socket(ipAddressDetails.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 			
 			try
             {
 				while (Running)
 				{
+					//continuously listen for new users
 					Console.WriteLine("Listening ...");
-					// listenerSocket.Bind(localEndPoint);
-					// listenerSocket.Listen(10);
-					Socket clientSocket = listener.AcceptSocket();//listenerSocket.Accept();
+					Socket clientSocket = listener.AcceptSocket();
 
+					//spawn new user's session in another thread
 					Task listenerTask = new Task(() => {
 						ListenForUserAndBegin(localEndPoint, clientSocket);
 					});
@@ -68,6 +68,7 @@ namespace AircraftBooking.Server
             }
 			finally
 			{
+				//shut down in case of error
 				Console.WriteLine("Shutting down!");
 				foreach (Socket socket in UserToSockets.Values)
 				{
@@ -85,12 +86,11 @@ namespace AircraftBooking.Server
 
 		public void ListenForUserAndBegin(IPEndPoint localEndPoint, Socket clientSocket)
 		{
+			//we have a connection
 			System.Console.WriteLine("Connection established!");
 
 			while (Running)
 			{
-				//ClientSocket = listenerSocket.Accept();
-
 				// Data buffer 
 				byte[] bytes = new Byte[4096];
 				string data = null;
@@ -104,6 +104,7 @@ namespace AircraftBooking.Server
 						break;
 					}
 				}
+				//deserialize
 				string serialisedJson = data.Substring(0,data.Length - 5);
 				Console.WriteLine($"Received serialised packet: {serialisedJson}");
 				Packet packet = Serializer.Deserialize<Packet>(serialisedJson);
@@ -114,23 +115,29 @@ namespace AircraftBooking.Server
 				//mean break out of the whole loop.
 				do
 				{
+					//switch based on packet IDs and act accordingly
 					switch (packet.PacketType)
 					{
 						case 1:
 							//UserInfo
+							//casting from base class to superclass doesn't work so we just deserialize again
 							UserInfoPacket userInfoPacket = Serializer.Deserialize<UserInfoPacket>(serialisedJson);//(UserInfoPacket) packet;
 							User user = userInfoPacket.User;
 
+							//check if credentials valid
 							if (this.Users.TryLogin(user) && !this.LogInManager.LoggedInUsers.Contains(user.Username))
 							{
+								//log them in
 								this.LogInManager.LoggedInUsers.Add(user.Username);
 								this.UserToSockets.Add(user.Username, clientSocket);
+								//send back packet to say it's successful
 								//this is fine as we know clientsocket is the right socket
 								this.SendPacket(new SuccessPacket().Construct("Successful login", 1), clientSocket);
 								Console.WriteLine($"User {user.Username} logged in!");
 							}
 							else
 							{
+								//tell user off.
 								Console.WriteLine("Invalid login attempted.");
 								this.SendPacket(new InvalidPacket().Construct("Invalid login!"), clientSocket);
 							}
@@ -142,12 +149,15 @@ namespace AircraftBooking.Server
 							BookPlaneSeatPacket bpsPacket = Serializer.Deserialize<BookPlaneSeatPacket>(serialisedJson);//(BookPlaneSeatPacket) packet;
 							currUser = bpsPacket.User;
 
+							//check to see if user is logged in
 							if (this.LogInManager.UserLoggedIn(bpsPacket.User))
 							{
+								//check to see if reasonable request
 								if (this.Planes.GetPlanesLength() >= bpsPacket.PlaneID)
 								{
 									Plane desiredPlane = this.Planes.GetByID(bpsPacket.PlaneID);
 
+									//check to see if seat available
 									if (desiredPlane.SeatAvailable(bpsPacket.SeatID))
 									{
 										desiredPlane.AddUserToSeat(currUser, bpsPacket.SeatID);
@@ -213,11 +223,6 @@ namespace AircraftBooking.Server
 		public static Server GetServer()
 		{
 			return Instance;
-		}
-
-		public Dictionary<string, Socket> GetUserToSockets()
-		{
-			return UserToSockets;
 		}
 	}
 }

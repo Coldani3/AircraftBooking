@@ -25,6 +25,7 @@ namespace AircraftBooking.Client
 
 		static void StartRendering()
 		{
+			//initialise menu stuff.
 			Console.SetWindowSize(70, 40);
 			MainMenu menu = new MainMenu();
 			Renderer renderer = new Renderer();
@@ -42,15 +43,6 @@ namespace AircraftBooking.Client
 				}
 
 				manager.ActiveMenu.OnInput(input, manager);
-
-				// if (ranOnce) 
-				// {
-				// 	manager.ActiveMenu.OnInput(input, manager);
-				// }
-				// else
-				// {
-				// 	ranOnce = true;
-				// }
 				
 				renderer.Render(manager);
 				System.Threading.Thread.Sleep(100);

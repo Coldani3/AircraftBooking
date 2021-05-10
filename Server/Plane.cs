@@ -15,15 +15,19 @@ namespace AircraftBooking.Server
 			this.Seats = new Seat[seats];
 		}
 
+		//Builder method
 		public Plane AddUserToSeat(User user, int seatID)
 		{
+			//check to see if available
 			if (this.Seats[seatID] == null)
 			{
+				//if no seat there instantiate one
 				this.Seats[seatID] = new Seat(user);
 				this.TakenSeats.Add(seatID);
 			}
 			else
 			{
+				//otherwise overwrite
 				this.Seats[seatID].SetOccupant(user);
 			}
 
@@ -37,18 +41,6 @@ namespace AircraftBooking.Server
 
 		public int[] GetTakenSeatIndexes()
 		{
-			// List<int> Indexes = new List<int>();
-
-			// for (int i = 0; i < this.Seats.Length; i++)
-			// {
-			// 	if (this.Seats[i].Occupied())
-			// 	{
-			// 		Indexes.Add(i);
-			// 	}
-			// }
-
-			// return Indexes.ToArray();
-
 			return this.TakenSeats.ToArray();
 		}
 	}
