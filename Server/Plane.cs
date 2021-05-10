@@ -15,7 +15,7 @@ namespace AircraftBooking.Server
 			this.Seats = new Seat[seats];
 		}
 
-		public void AddUserToSeat(User user, int seatID)
+		public Plane AddUserToSeat(User user, int seatID)
 		{
 			if (this.Seats[seatID] == null)
 			{
@@ -26,6 +26,8 @@ namespace AircraftBooking.Server
 			{
 				this.Seats[seatID].SetOccupant(user);
 			}
+
+			return this;
 		}
 
 		public bool SeatAvailable(int seatID)

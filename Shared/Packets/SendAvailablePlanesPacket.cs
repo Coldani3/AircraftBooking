@@ -15,7 +15,7 @@ namespace AircraftBooking.Shared.Packets
 
 		public override Packet Construct(params object[] args)
 		{
-			PlaneInfos = (PlaneInfo[]) args[0];
+			PlaneInfos = (PlaneInfo[]) args;
 			return this;
 		}
 	}

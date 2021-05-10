@@ -33,7 +33,7 @@ namespace AircraftBooking.Server
 
 			for (int i = 0; i < this.Planes.Count; i++)
 			{
-				infos.Add(new PlaneInfo(i, this.Planes[i].Name, this.Planes[i].GetTakenSeatIndexes()));
+				infos.Add(new PlaneInfo(i, this.Planes[i].Name, this.Planes[i].GetTakenSeatIndexes(), this.Planes[i].Seats.Length));
 			}
 
 			return infos.ToArray();

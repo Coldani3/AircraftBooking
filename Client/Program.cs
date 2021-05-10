@@ -12,8 +12,15 @@ namespace AircraftBooking.Client
         static void Main(string[] args)
         {
             Client.GetClient().Start();
-			StartRendering();
 
+			try
+			{
+				StartRendering();
+			}
+			finally
+			{
+				Client.GetClient().Shutdown();
+			}
         }
 
 		static void StartRendering()
@@ -23,7 +30,6 @@ namespace AircraftBooking.Client
 			Renderer renderer = new Renderer();
 			MenuManager = new MenuManager(renderer, menu);
 			MenuManager manager = MenuManager;
-			bool ranOnce = false;
 
 			renderer.Render(manager);
 

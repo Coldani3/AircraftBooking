@@ -54,7 +54,19 @@ namespace AircraftBooking.Server
 
 		public void AddUser(User user)
 		{
-			this.Users.Add(user);
+			bool found = false;
+			foreach (User existingUser in this.Users)
+			{
+				if (existingUser == user)
+				{
+					found = true;
+				}
+			}
+
+			if (!found)
+			{
+				this.Users.Add(user);
+			}
 		}
 
 		public void DeleteUser(User user)

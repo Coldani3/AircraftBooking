@@ -12,20 +12,24 @@ namespace AircraftBooking.Server
 	public class Server 
 	{
 		private static Server Instance = new Server();
-		public User CurrentUser;
+		public static bool Running = true;
 		public UserDatabase Users = new UserDatabase("users.txt");
 		public Hangar Planes = new Hangar();
-		// public bool UserLoggedIn {get => this.CurrentUser != null;}
-		public List<User> LoggedInUsers = new List<User>();
-		private Dictionary<User, Socket> UserToSockets = new Dictionary<User, Socket>();
+		
+		public LogInManager LogInManager = new LogInManager();
+
+		//public List<string> LoggedInUsers = new List<string>();
+		private Dictionary<string, Socket> UserToSockets = new Dictionary<string, Socket>();
 
 		private Server()
 		{
-			this.Planes.AddPlane(PlaneFactory.CreatePlane(PlaneTypes.AirbusA340));
-			this.Planes.AddPlane(PlaneFactory.CreatePlane(PlaneTypes.AirbusA340));
-			this.Planes.AddPlane(PlaneFactory.CreatePlane(PlaneTypes.Boeing747));
-			this.Planes.AddPlane(PlaneFactory.CreatePlane(PlaneTypes.Boeing757));
-			this.Planes.AddPlane(PlaneFactory.CreatePlane(PlaneTypes.Boeing747));
+			User dummyUser = new User("DummyUser", "expandThatDomain");
+			User dummyUser2 = new User("non kind shrine", "fukum4Mizu5h1");
+			this.Planes.AddPlane(PlaneFactory.CreatePlane(PlaneTypes.AirbusA340).AddUserToSeat(dummyUser, 1).AddUserToSeat(dummyUser, 4).AddUserToSeat(dummyUser, 9).AddUserToSeat(dummyUser2, 16));
+			this.Planes.AddPlane(PlaneFactory.CreatePlane(PlaneTypes.AirbusA340).AddUserToSeat(dummyUser, 3).AddUserToSeat(dummyUser2, 6).AddUserToSeat(dummyUser2, 12).AddUserToSeat(dummyUser, 24));
+			this.Planes.AddPlane(PlaneFactory.CreatePlane(PlaneTypes.Boeing747).AddUserToSeat(dummyUser, 5));
+			this.Planes.AddPlane(PlaneFactory.CreatePlane(PlaneTypes.Boeing757).AddUserToSeat(dummyUser, 1).AddUserToSeat(dummyUser2, 75));
+			this.Planes.AddPlane(PlaneFactory.CreatePlane(PlaneTypes.Boeing747).AddUserToSeat(dummyUser, 7).AddUserToSeat(dummyUser, 9));
 		}
 
 		public void Start()
@@ -35,19 +39,18 @@ namespace AircraftBooking.Server
             IPAddress ipAddressDetails = ipHostDetails.AddressList[0];
             IPEndPoint localEndPoint = new IPEndPoint(ipAddressDetails, 4242);
 
-            Socket listenerSocket = new Socket(ipAddressDetails.AddressFamily,
-                        SocketType.Stream, ProtocolType.Tcp);
+            Socket listenerSocket = new Socket(ipAddressDetails.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 			
 			try
             {
                 listenerSocket.Bind(localEndPoint);
-                listenerSocket.Listen(10);
+				listenerSocket.Listen(10);
+				Socket clientSocket = listenerSocket.Accept();
+				System.Console.WriteLine("Connection established!");
 
-                while (true)
+                while (Running)
                 {
                     //ClientSocket = listenerSocket.Accept();
-					Socket clientSocket = listenerSocket.Accept();
-					System.Console.WriteLine("Connection established!");
 
                     // Data buffer 
                     byte[] bytes = new Byte[4096];
@@ -62,105 +65,108 @@ namespace AircraftBooking.Server
                             break;
 						}
                     }
-                    string serialisedXml = data.Substring(0,data.Length - 5);
-					Console.WriteLine($"Received serialised packet: {serialisedXml}");
-					Packet packet = Serializer.Deserialize<Packet>(serialisedXml);
+                    string serialisedJson = data.Substring(0,data.Length - 5);
+					Console.WriteLine($"Received serialised packet: {serialisedJson}");
+					Packet packet = Serializer.Deserialize<Packet>(serialisedJson);
 					Console.WriteLine($"Received packet {packet.PacketType}!");
 					User currUser;
 
-					switch (packet.PacketType)
+					//we seem to need this do while (false) 'loop' as the program seems to think breaks in the switch statement
+					//mean break out of the whole loop.
+					do
 					{
-						case 1:
-							//UserInfo
-							UserInfoPacket userInfoPacket = Serializer.Deserialize<UserInfoPacket>(serialisedXml);//(UserInfoPacket) packet;
-							User user = userInfoPacket.User;
+						switch (packet.PacketType)
+						{
+							case 1:
+								//UserInfo
+								UserInfoPacket userInfoPacket = Serializer.Deserialize<UserInfoPacket>(serialisedJson);//(UserInfoPacket) packet;
+								User user = userInfoPacket.User;
 
-							if (this.Users.TryLogin(user) && !this.LoggedInUsers.Contains(user))
-							{
-								this.LoggedInUsers.Add(user);
-								this.UserToSockets.Add(user, clientSocket);
-								//this is fine as we know clientsocket is the right socket
-								this.SendPacket(new SuccessPacket().Construct("Successful login", 1), clientSocket);
-								Console.WriteLine($"User {user.Username} logged in!");
-							}
-							else
-							{
-								Console.WriteLine("Invalid login attempted.");
-								this.SendPacket(new InvalidPacket().Construct("Invalid login!"), clientSocket);
-							}
-
-							break;
-						case 2:
-							
-							break;
-
-						// case 3:
-						// 	//SendAvailablePlanes
-						// 	if (this.UserLoggedIn)
-						// 	{
-						// 		this.SendPacket(new SendPlaneInfoPacket().Construct())
-						// 	}
-						// 	break;
-
-						case 4:
-						//BookPlaneSeat
-							BookPlaneSeatPacket bpsPacket = Serializer.Deserialize<BookPlaneSeatPacket>(serialisedXml);//(BookPlaneSeatPacket) packet;
-							currUser = bpsPacket.User;
-
-							if (this.UserLoggedIn(bpsPacket.User))
-							{
-								if (this.Planes.GetPlanesLength() <= bpsPacket.PlaneID)
+								if (this.Users.TryLogin(user) && !this.LogInManager.LoggedInUsers.Contains(user.Username))
 								{
-									Plane desiredPlane = this.Planes.GetByID(bpsPacket.PlaneID);
+									this.LogInManager.LoggedInUsers.Add(user.Username);
+									this.UserToSockets.Add(user.Username, clientSocket);
+									//this is fine as we know clientsocket is the right socket
+									this.SendPacket(new SuccessPacket().Construct("Successful login", 1), clientSocket);
+									Console.WriteLine($"User {user.Username} logged in!");
+								}
+								else
+								{
+									Console.WriteLine("Invalid login attempted.");
+									this.SendPacket(new InvalidPacket().Construct("Invalid login!"), clientSocket);
+								}
 
-									if (desiredPlane.SeatAvailable(bpsPacket.SeatID))
+								break;
+
+							case 4:
+							//BookPlaneSeat
+								BookPlaneSeatPacket bpsPacket = Serializer.Deserialize<BookPlaneSeatPacket>(serialisedJson);//(BookPlaneSeatPacket) packet;
+								currUser = bpsPacket.User;
+
+								if (this.LogInManager.UserLoggedIn(bpsPacket.User))
+								{
+									if (this.Planes.GetPlanesLength() <= bpsPacket.PlaneID)
 									{
-										desiredPlane.AddUserToSeat(currUser, bpsPacket.SeatID);
-										this.SendPacket(new SuccessPacket().Construct("Successfully booked seat", 2), this.UserToSockets[currUser]);
+										Plane desiredPlane = this.Planes.GetByID(bpsPacket.PlaneID);
+
+										if (desiredPlane.SeatAvailable(bpsPacket.SeatID))
+										{
+											desiredPlane.AddUserToSeat(currUser, bpsPacket.SeatID);
+											this.SendPacket(new SuccessPacket().Construct("Successfully booked seat", 2), this.UserToSockets[currUser.Username]);
+										}
+										else
+										{
+											this.SendPacket(new InvalidPacket().Construct("Seat already booked"), this.UserToSockets[currUser.Username]);
+										}
 									}
 									else
 									{
-										this.SendPacket(new InvalidPacket().Construct("Seat already booked"), this.UserToSockets[currUser]);
+										this.SendPacket(new InvalidPacket().Construct("Invalid seat ID"), this.UserToSockets[currUser.Username]);
 									}
 								}
 								else
 								{
-									this.SendPacket(new InvalidPacket().Construct("Invalid seat ID"), this.UserToSockets[currUser]);
+									this.SendPacket(new InvalidPacket().Construct("Cannot request a plane seat as you are not logged in!"), clientSocket);
 								}
-							}
-							else
-							{
-								this.SendPacket(new InvalidPacket().Construct("Cannot request a plane seat as you are not logged in!"), clientSocket);
-							}
 
-							break;
+								break;
 
-						case 5:
-							//RequestAvailablePlanes
-							RequestAvailablePlanesPacket rapPacket = Serializer.Deserialize<RequestAvailablePlanesPacket>(serialisedXml);//(RequestAvailablePlanesPacket) packet;
-							currUser = rapPacket.User;
+							case 5:
+								Console.WriteLine("About to send planes.");
+								//RequestAvailablePlanes
+								RequestAvailablePlanesPacket rapPacket = Serializer.Deserialize<RequestAvailablePlanesPacket>(serialisedJson);//(RequestAvailablePlanesPacket) packet;
+								currUser = rapPacket.User;
 
-							if (this.UserLoggedIn(rapPacket.User))
-							{
-								PlaneInfo[] infos = this.Planes.GetPlaneInfos();
+								if (this.LogInManager.UserLoggedIn(rapPacket.User))
+								{
+									PlaneInfo[] infos = this.Planes.GetPlaneInfos();
 
-								this.SendPacket(new SendAvailablePlanesPacket().Construct(infos), this.UserToSockets[currUser]);
-							}
-							else
-							{
-								this.SendPacket(new InvalidPacket().Construct("Cannot request planes as you are not logged in!"), clientSocket);
-							}
-							break;
+									Console.WriteLine($"Sending {infos.Length} planes!");
 
-					}
-                    // DataItem dataItem = DataItemSerialisation.GetDataItem(serialisedXml);
-                    // WriteLine("Text received -> {0} ", dataItem.Id);
-                    // DataItem response = new DataItem("Green");
-                    // string serialisedItem = DataItemSerialisation.GetSerialisedDataItem(response);
-                    // byte[] message = null;//Encoding.ASCII.GetBytes(serialisedItem);
+									this.SendPacket(new SendAvailablePlanesPacket().Construct(infos), this.UserToSockets[currUser.Username]);
+								}
+								else
+								{
+									this.SendPacket(new InvalidPacket().Construct("Cannot request planes as you are not logged in!"), clientSocket);
+								}
+								break;
+							
+							case 6:
+								//Log out
+								LogOutPacket logOutPacket = Serializer.Deserialize<LogOutPacket>(serialisedJson);
 
-                    // clientSocket.Send(message);
-                    
+								if (this.LogInManager.LoggedInUsers.Contains(logOutPacket.User.Username))
+								{
+									Console.WriteLine($"Logging out user {logOutPacket.User}!");
+									this.LogInManager.LoggedInUsers.Remove(logOutPacket.User.Username);
+									// this.UserToSockets[logOutPacket.User.Username].Shutdown(SocketShutdown.Both);
+									// this.UserToSockets[logOutPacket.User.Username].Close();
+								}
+
+								break;
+
+						}
+					} while (false);
                 }
             }
             catch (Exception e)
@@ -169,32 +175,18 @@ namespace AircraftBooking.Server
             }
 			finally
 			{
+				Console.WriteLine("Shutting down!");
 				foreach (Socket socket in UserToSockets.Values)
 				{
 					socket.Shutdown(SocketShutdown.Both);
 					socket.Close();
 				}
-
-				// ClientSocket.Shutdown(SocketShutdown.Both);
-                // ClientSocket.Close();
 			}
         }
 
-		public bool UserLoggedIn(User user)
-		{
-			foreach (User preExistingUser in this.LoggedInUsers)
-			{
-				if (user == preExistingUser)
-				{
-					return true;
-				}
-			}
-
-			return false;
-		}
-
 		public void SendPacket(Packet packet, Socket socket)
 		{
+			//serialize packet and send
 			socket.Send(Encoding.ASCII.GetBytes(Serializer.Serialize<Packet>(packet)));
 		}
 
@@ -204,7 +196,7 @@ namespace AircraftBooking.Server
 			return Instance;
 		}
 
-		public Dictionary<User, Socket> GetUserToSockets()
+		public Dictionary<string, Socket> GetUserToSockets()
 		{
 			return UserToSockets;
 		}
